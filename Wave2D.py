@@ -202,6 +202,8 @@ def test_exact_wave2d():
   
 
 def make_animation():
+    from IPython.display import HTML
+    from IPython.display import display
     solN = Wave2D_Neumann()
     results = solN(50, 50, cfl=1/sp.sqrt(2), mx=2, my=2, store_data=5)
     fig = plt.figure()
@@ -231,6 +233,8 @@ def make_animation():
     ani.save('neumannwave.gif', writer='pillow', fps=5)
     return ani
 if __name__ == "__main__":
+    from IPython.display import HTML
+    from IPython.display import display
     # Run the convergence test for Wave2D
     test_convergence_wave2d()
     print("Test passed: Convergence for Wave2D works as expected.")
