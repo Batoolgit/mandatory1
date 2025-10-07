@@ -6,8 +6,6 @@ import scipy.sparse as sparse
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import matplotlib.animation as animation
-from IPython.display import HTML
-from IPython.display import display
 
 
 
