@@ -66,7 +66,6 @@ class Poisson2D:
 
     def assemble(self):
         """Return assembled matrix A and right-hand side vector b."""
-        # Evaluate source term and exact boundary
 
         F = sp.lambdify((x, y), self.f)(self.xij, self.yij)
 
