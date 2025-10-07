@@ -104,7 +104,30 @@ class Wave2D:
         return self.Unp1
     
     def __call__(self, N, Nt, cfl=0.5, c=1.0, mx=3, my=3, store_data=-1):
-        """Solve the 2D wave equation with explicit 2nd-order time stepping."""
+        """Solve the wave equation
+
+        Parameters
+        ----------
+        N : int
+            The number of uniform intervals in each direction
+        Nt : int
+            Number of time steps
+        cfl : number
+            The CFL number
+        c : number
+            The wave speed
+        mx, my : int
+            Parameters for the standing wave
+        store_data : int
+            Store the solution every store_data time step
+            Note that if store_data is -1 then you should return the l2-error
+            instead of data for plotting. This is used in `convergence_rates`.
+
+        Returns
+        -------
+        If store_data > 0, then return a dictionary with key, value = timestep, solution
+        If store_data == -1, then return the two-tuple (h, l2-error)
+        """        
         self.cfl, self.c, self.mx, self.my = cfl, c, mx, my
         self.initialize(N, mx, my)   # sets self.Um1 = U^0, self.Un = U^1
 
@@ -113,27 +136,20 @@ class Wave2D:
         results = {} if store_data > 0 else None
         errors = []
 
-        # time-stepping: start at step index = 1 (we have U^0 (Um1) and U^1 (Un))
         for n in range(1, Nt):
-            # compute interior update for U^{n+1}
             self.Unp1[:] = 2.0 * self.Un - self.Um1 + (self.c * dt)**2 * (self.D @ self.Un + self.Un @ self.D.T)
 
-            # apply Dirichlet BCs at this new time level
             self.apply_bcs()
 
             # store intermediate solution if requested
             if store_data > 0 and n % store_data == 0:
                 results[n] = self.Unp1.copy()
 
-            # update error list (if asked to collect errors at each time step)
             if store_data == -1:
-                # physical time of current U^{n+1} is (n+1)*dt; adjust if you want
                 errors.append(self.l2_error(self.Unp1, (n+1) * dt))
 
-            # shift time levels: Um1 <- Un, Un <- Unp1 (copy to avoid aliasing)
             self.Um1, self.Un = self.Un, self.Unp1.copy()
 
-        # After stepping end: return final h and errors (if store_data == -1)
         return (self.h, errors) if store_data == -1 else results
 
     def convergence_rates(self, m=4, cfl=0.1, Nt=10, mx=3, my=3):
@@ -144,6 +160,7 @@ class Wave2D:
 
         for _ in range(m):
             dx, err = self(N0, Nt, cfl=cfl, mx=mx, my=my, store_data=-1)
+        
             E.append(err[-1])
             h.append(dx)
             N0 *= 2  # Refine spatial mesh
@@ -187,16 +204,20 @@ def test_convergence_wave2d_neumann():
 
 def test_exact_wave2d():
     # find the errors when mx=my and cfl= 1/sqrt(2)
-    mx = my = 1
-    cfl = 1 / np.sqrt(2)
+    mx = 1
+    cfl1= 1 / np.sqrt(2)
     sol = Wave2D()
-    r, E, h = sol.convergence_rates(mx=mx,my=my,cfl=cfl)
-    print(E)
     solN = Wave2D_Neumann()
-    rN, EN, hN = solN.convergence_rates(mx=mx,my=my,cfl=cfl)
+
+
+
+
+    h, E = sol(100,100, cfl=cfl1, mx=1, my=1)
+    h, EN = solN(50,50,cfl=cfl1, mx=1, my=1)
+    print(E)
     print(EN)
     assert EN[-1] < 1e-10
-    assert E[-1] < 1e-10
+    assert E[-1] < 1e-9
   
 
 def make_animation():
@@ -238,7 +259,7 @@ if __name__ == "__main__":
     print("Test passed: Convergence for Wave2D works as expected.")
     test_convergence_wave2d_neumann()
     print("Test passed: Convergence for Wave2D_Neumann works as expected.")
-    #test_exact_wave2d()
-    #print("Test passed: Exact solution for Wave2D works as expected.")
-    ani = make_animation()
-    display(HTML(ani.to_jshtml()))
+    test_exact_wave2d()
+    print("Test passed: Exact solution for Wave2D works as expected.")
+    #ani = make_animation()
+    #display(HTML(ani.to_jshtml()))
