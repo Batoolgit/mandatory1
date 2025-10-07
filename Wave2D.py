@@ -15,8 +15,8 @@ x, y, t = sp.symbols('x, y, t')
 
 class Wave2D:
     def __init__(self, L=1.0):
-        """Initialize the wave simulator with a default domain size L."""
-        self.L = L  # Centralized domain size
+        """Initialize with a default domain size L."""
+        self.L = L  
         self.U = None
         self.Um1 = None
 
@@ -33,7 +33,7 @@ class Wave2D:
 
     def D2(self, N):
         """Return second order differentiation matrix"""
-
+        # See lecture notes week 5
         D2 = sparse.diags([np.ones(self.N), np.full(self.N+1, -2), np.ones(self.N)], np.array([-1, 0, 1]), (self.N+1, self.N+1), 'lil')
         D2.toarray()
         D2[0, :4] = 2, -5, 4, -1
@@ -46,13 +46,21 @@ class Wave2D:
 
         return self.c * sp.pi * sp.sqrt(self.mx**2 + self.my**2)
 
-    def ue(self, mx, my):
-        """Return the exact standing wave."""
 
-        return sp.sin(mx * sp.pi * x) * sp.sin(my * sp.pi * y) * sp.cos(self.w * t)
+    def ue(self, mx, my):
+        """Return the exact standing wave"""
+        return sp.sin(mx*sp.pi*x)*sp.sin(my*sp.pi*y)*sp.cos(self.w*t)
 
     def initialize(self, N, mx, my):
-        """Initialize the solution at times U^n and U^{n-1}."""
+        r"""Initialize the solution at $U^{n}$ and $U^{n-1}$
+
+        Parameters
+        ----------
+        N : int
+            The number of uniform intervals in each direction
+        mx, my : int
+            Parameters for the standing wave
+        """
         self.create_mesh(N)
         self.Un = np.zeros((N + 1, N + 1))
         self.Um1 = np.zeros((N + 1, N + 1))
@@ -74,14 +82,22 @@ class Wave2D:
         return self.cfl * self.h / self.c
 
     def l2_error(self, u, t0):
-        """Return l2-error norm."""
+        """Return l2-error norm
+
+        Parameters
+        ----------
+        u : array
+            The solution mesh function
+        t0 : number
+            The time of the comparison
+        """
         ue = self.ue(self.mx, self.my)
         ue_func = sp.lambdify((x, y, t), ue, 'numpy')
         ue_exact = ue_func(self.xij, self.yij, t0)
         return np.sqrt((self.h * self.h) * np.sum((ue_exact - u)**2))
 
     def apply_bcs(self):
-        """Apply zero Dirichlet boundary conditions."""
+        """Applying Dirichlet boundary conditions."""
      
         self.Unp1[0, :] = 0  # Bottom boundary
         self.Unp1[-1, :] = 0  # Top boundary
@@ -199,8 +215,6 @@ def make_animation():
                         linewidth=0, antialiased=False)
     
 
-    # capture, otherwise there will be a plot in this cell
-
 
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
     frames = []
@@ -213,7 +227,6 @@ def make_animation():
 
     ani = animation.ArtistAnimation(fig, frames, interval=400, blit=True,
                                     repeat_delay=1000)
-    #ani.save('wavemovie2dunstable.apng', writer='pillow', fps=5) # This animated png opens in a browser
     #save animation as gif in the folder called report
     ani.save('neumannwave.gif', writer='pillow', fps=5)
     return ani
